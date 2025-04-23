@@ -44,5 +44,5 @@ jobs:
           curl -v -X PATCH \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"image":"${{ secrets.DOCKER_HUB_USERNAME }}/pr5-app:$GITHUB_SHA"}' \
+            -d '{"image":"${{ secrets.DOCKER_USERNAME }}/itwillpass/cd_docker_project:$GITHUB_SHA"}' \
             "https://api.render.com/deploy/$RENDER_SERVICE_ID"
