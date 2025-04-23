@@ -34,7 +34,7 @@ jobs:
           echo '{"clearCache":true}' > payload.json
     
           # 2. Отправляем запрос без указания образа
-          curl -v -X POST \
+          curl -k -v -X POST \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             --data-binary @payload.json \
@@ -44,5 +44,5 @@ jobs:
           curl -v -X PATCH \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"image":"$DOCKER_IMAGE_NAME:$GITHUB_SHA"}' \
-            "https://api.render.com/deploy/$RENDER_SERVICE_ID"
+            -d "{"image":"$DOCKER_IMAGE_NAME:$GITHUB_SHA"}" \
+            "https://api.render.com/deploy/$RENDER_SERVICE_ID/deploys"
