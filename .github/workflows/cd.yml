@@ -1,11 +1,9 @@
 name: Manual Docker Deploy to Render
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'cd_docker_project/**'
+    push:
+      branches:
+        - main  
 
 env:
   RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
@@ -41,11 +39,11 @@ jobs:
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             --data-binary @payload.json \
-            "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}/deploys"
+            "https://api.render.com/deploy/$RENDER_SERVICE_ID/deploys"
     
           # 3. Вручную обновляем образ через Render API
           curl -v -X PATCH \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"image":"${{ secrets.DOCKER_HUB_USERNAME }}/pr5-app:$GITHUB_SHA"}' \
-            "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}"
+            "https://api.render.com/deploy/$RENDER_SERVICE_ID"
