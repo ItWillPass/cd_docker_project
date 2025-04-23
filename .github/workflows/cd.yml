@@ -1,22 +1,51 @@
-name: CI/CD Pipeline
+name: Manual Docker Deploy to Render
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - 'cd_docker_project/**'
+
+env:
+  RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+  DOCKER_IMAGE_NAME: itwillpass/cd_docker_project
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t itwillpass/cd_docker_project:latest .
+        working-directory: ./cd_docker_project
+        run: |
+          docker build -t $DOCKER_IMAGE_NAME:$GITHUB_SHA .
+      - name: Login to Docker Hub
+        run: echo '${{ secrets.DOCKER_HUB_TOKEN }}' | docker login -u '${{ secrets.DOCKER_HUB_USERNAME }}' --password-stdin
 
-      - name: Log in to Docker Hub
-        run: echo '${{ secrets.DOCKER_PASSWORD }}' | docker login -u '${{ secrets.DOCKER_USERNAME }}' --password-stdin
-
-      - name: Push Docker image to Docker Hub
-        run: docker push itwillpass/cd_docker_project:latest
+      - name: Push Docker image
+        run: docker push $DOCKER_IMAGE_NAME:$GITHUB_SHA
+        
+      - name: Trigger Render Deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          # 1. Создаем минимальный JSON файл
+          echo '{"clearCache":true}' > payload.json
+    
+          # 2. Отправляем запрос без указания образа
+          curl -v -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            --data-binary @payload.json \
+            "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}/deploys"
+    
+          # 3. Вручную обновляем образ через Render API
+          curl -v -X PATCH \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"image":"${{ secrets.DOCKER_HUB_USERNAME }}/pr5-app:$GITHUB_SHA"}' \
+            "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}"
